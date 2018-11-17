@@ -16,10 +16,13 @@ enum xmrstak_algo
 	cryptonight_masari = 8, //equal to cryptonight_monero but with less iterations, used by masari
 	cryptonight_haven = 9, // equal to cryptonight_heavy with a small tweak
 	cryptonight_bittube2 = 10, // derived from cryptonight_heavy with own aes-round implementation and minor other tweaks
-	cryptonight_monero_v8 = 11
+	cryptonight_monero_v8 = 11,
+	cryptonight_freehaven = 12
 };
 
 // define aeon settings
+constexpr uint32_t CRYPTONIGHT_FAST_ITER = 0x20000;
+
 constexpr size_t CRYPTONIGHT_LITE_MEMORY = 1 * 1024 * 1024;
 constexpr uint32_t CRYPTONIGHT_LITE_MASK = 0xFFFF0;
 constexpr uint32_t CRYPTONIGHT_LITE_ITER = 0x40000;
@@ -36,6 +39,9 @@ constexpr uint32_t CRYPTONIGHT_MASARI_ITER = 0x40000;
 
 template<xmrstak_algo ALGO>
 inline constexpr size_t cn_select_memory() { return 0; }
+
+template<>
+inline constexpr size_t cn_select_memory<cryptonight_freehaven>() { return CRYPTONIGHT_MEMORY; }
 
 template<>
 inline constexpr size_t cn_select_memory<cryptonight>() { return CRYPTONIGHT_MEMORY; }
@@ -79,6 +85,7 @@ inline size_t cn_select_memory(xmrstak_algo algo)
 	case cryptonight_monero_v8:
 	case cryptonight_masari:
 	case cryptonight:
+	case cryptonight_freehaven:
 		return CRYPTONIGHT_MEMORY;
 	case cryptonight_ipbc:
 	case cryptonight_aeon:
@@ -95,6 +102,9 @@ inline size_t cn_select_memory(xmrstak_algo algo)
 
 template<xmrstak_algo ALGO>
 inline constexpr uint32_t cn_select_mask() { return 0; }
+
+template<>
+inline constexpr uint32_t cn_select_mask<cryptonight_freehaven>() { return CRYPTONIGHT_MASK; }
 
 template<>
 inline constexpr uint32_t cn_select_mask<cryptonight>() { return CRYPTONIGHT_MASK; }
@@ -138,10 +148,11 @@ inline size_t cn_select_mask(xmrstak_algo algo)
 	case cryptonight_monero_v8:
 	case cryptonight_masari:
 	case cryptonight:
+	case cryptonight_freehaven:
 		return CRYPTONIGHT_MASK;
 	case cryptonight_ipbc:
 	case cryptonight_aeon:
-	case cryptonight_lite:
+	case cryptonight_lite:	
 		return CRYPTONIGHT_LITE_MASK;
 	case cryptonight_bittube2:
 	case cryptonight_haven:
@@ -154,6 +165,9 @@ inline size_t cn_select_mask(xmrstak_algo algo)
 
 template<xmrstak_algo ALGO>
 inline constexpr uint32_t cn_select_iter() { return 0; }
+
+template<>
+inline constexpr uint32_t cn_select_iter<cryptonight_freehaven>() { return CRYPTONIGHT_FAST_ITER; }
 
 template<>
 inline constexpr uint32_t cn_select_iter<cryptonight>() { return CRYPTONIGHT_ITER; }
@@ -207,6 +221,8 @@ inline size_t cn_select_iter(xmrstak_algo algo)
 		return CRYPTONIGHT_HEAVY_ITER;
 	case cryptonight_masari:
 		return CRYPTONIGHT_MASARI_ITER;
+	case cryptonight_freehaven:
+		return CRYPTONIGHT_FAST_ITER;
 	default:
 		return 0;
 	}

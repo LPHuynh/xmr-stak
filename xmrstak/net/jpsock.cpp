@@ -676,6 +676,9 @@ bool jpsock::cmd_submit(const char* sJobId, uint32_t iNonce, const uint8_t* bRes
 		const char* algo_name;
 		switch(algo)
 		{
+		case cryptonight_freehaven:
+			algo_name = "cryptonight_freehaven";
+			break;
 		case cryptonight:
 			algo_name = "cryptonight";
 			break;
