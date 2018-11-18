@@ -152,7 +152,7 @@ inline size_t cn_select_mask(xmrstak_algo algo)
 		return CRYPTONIGHT_MASK;
 	case cryptonight_ipbc:
 	case cryptonight_aeon:
-	case cryptonight_lite:	
+	case cryptonight_lite:
 		return CRYPTONIGHT_LITE_MASK;
 	case cryptonight_bittube2:
 	case cryptonight_haven:

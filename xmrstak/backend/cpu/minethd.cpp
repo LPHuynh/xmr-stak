@@ -593,7 +593,7 @@ minethd::cn_hash_fun minethd::func_multi_selector(bool bHaveAes, bool bNoPrefetc
 		Cryptonight_hash<N>::template hash<cryptonight_monero_v8, true, false>,
 		Cryptonight_hash<N>::template hash<cryptonight_monero_v8, false, true>,
 		Cryptonight_hash<N>::template hash<cryptonight_monero_v8, true, true>,
-		
+
 		Cryptonight_hash<N>::template hash<cryptonight_freehaven, false, false>,
 		Cryptonight_hash<N>::template hash<cryptonight_freehaven, true, false>,
 		Cryptonight_hash<N>::template hash<cryptonight_freehaven, false, true>,
