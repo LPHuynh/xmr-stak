@@ -789,17 +789,15 @@ int main(int argc, char *argv[])
 	printer::inst()->print_str("'r' - results\n");
 	printer::inst()->print_str("'c' - connection\n");
 	printer::inst()->print_str("-------------------------------------------------------------------\n");
-	printer::inst()->print_str("Upcoming xmr-stak-gui is sponsored by:\n");
-	printer::inst()->print_str("   #####   ______               ____\n");
-	printer::inst()->print_str(" ##     ## | ___ \\             /  _ \\\n");
-	printer::inst()->print_str("#    _    #| |_/ /_   _   ___  | / \\/ _   _  _ _  _ _  ___  _ __    ___  _   _\n");
-	printer::inst()->print_str("#   |_|   #|    /| | | | / _ \\ | |   | | | || '_|| '_|/ _ \\| '_ \\  / __|| | | |\n");
-	printer::inst()->print_str("#         #| |\\ \\| |_| || (_) || \\_/\\| |_| || |  | | |  __/| | | || (__ | |_| |\n");
-	printer::inst()->print_str(" ##     ## \\_| \\_|\\__, | \\___/ \\____/ \\__,_||_|  |_|  \\___||_| |_| \\___| \\__, |\n");
-	printer::inst()->print_str("   #####           __/ |                                                  __/ |\n");
-	printer::inst()->print_str("                  |___/   https://ryo-currency.com                       |___/\n\n");
-	printer::inst()->print_str("This currency is a way for us to implement the ideas that we were unable to in\n");
-	printer::inst()->print_str("Monero. See https://github.com/fireice-uk/cryptonote-speedup-demo for details.\n");
+	printer::inst()->print_str("Modified and compiled by:\n");
+	printer::inst()->print_str("   __               _                           \n");
+	printer::inst()->print_str("  / _|             | |                          \n");
+	printer::inst()->print_str(" | |_ _ __ ___  ___| |__   __ ___   _____ _ __  \n");
+	printer::inst()->print_str(" |  _| '__/ _ \/ _ \ '_ \ / _` \ \ / / _ \ '_ \ \n");
+	printer::inst()->print_str(" | | | | |  __/  __/ | | | (_| |\ V /  __/ | | |\n");
+	printer::inst()->print_str(" |_| |_|  \___|\___|_| |_|\__,_| \_/ \___|_| |_| \n");	
+	printer::inst()->print_str("Untraceable payments x Stable network x NO FEES x NO PREMINE\n");
+	printer::inst()->print_str("Check out our Discord https://discord.gg/cFR5mgg\n");
 	printer::inst()->print_str("-------------------------------------------------------------------\n");
 	printer::inst()->print_msg(L0, "Mining coin: %s", jconf::inst()->GetMiningCoin().c_str());
 
