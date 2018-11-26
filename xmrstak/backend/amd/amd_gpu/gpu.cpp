@@ -43,7 +43,6 @@
 #endif
 
 
-
 #ifdef _WIN32
 #include <windows.h>
 #include <Shlobj.h>
@@ -412,12 +411,12 @@ size_t InitOpenCLGpu(cl_context opencl_ctx, GpuContext* ctx, const char* source_
 
 		std::string options;
 		options += " -DITERATIONS=" + std::to_string(hashIterations);
-		options += " -DMASK=" + std::to_string(threadMemMask);
-		options += " -DWORKSIZE=" + std::to_string(ctx->workSize);
+		options += " -DMASK=" + std::to_string(threadMemMask) + "U";
+		options += " -DWORKSIZE=" + std::to_string(ctx->workSize) + "U";
 		options += " -DSTRIDED_INDEX=" + std::to_string(strided_index);
-		options += " -DMEM_CHUNK_EXPONENT=" + std::to_string(mem_chunk_exp);
+		options += " -DMEM_CHUNK_EXPONENT=" + std::to_string(mem_chunk_exp) + "U";
 		options += " -DCOMP_MODE=" + std::to_string(ctx->compMode ? 1u : 0u);
-		options += " -DMEMORY=" + std::to_string(hashMemSize);
+		options += " -DMEMORY=" + std::to_string(hashMemSize) + "LLU";
 		options += " -DALGO=" + std::to_string(miner_algo[ii]);
 		options += " -DCN_UNROLL=" + std::to_string(ctx->unroll);
 		/* AMD driver output is something like: `1445.5 (VM)`
@@ -940,7 +939,7 @@ size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx)
 	for(int i = 0; i < num_gpus; ++i)
 	{
 		const std::string backendName = xmrstak::params::inst().openCLVendor;
-		if(ctx[i].stridedIndex == 2 && (ctx[i].rawIntensity % ctx[i].workSize) != 0)
+		if( (ctx[i].stridedIndex == 2 || ctx[i].stridedIndex == 3) && (ctx[i].rawIntensity % ctx[i].workSize) != 0)
 		{
 			size_t reduced_intensity = (ctx[i].rawIntensity / ctx[i].workSize) * ctx[i].workSize;
 			ctx[i].rawIntensity = reduced_intensity;
@@ -969,7 +968,7 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 	input[input_len] = 0x01;
 	memset(input + input_len + 1, 0, 88 - input_len - 1);
 
-	size_t numThreads = ctx->rawIntensity;
+	cl_uint numThreads = ctx->rawIntensity;
 
 	if((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->InputBuffer, CL_TRUE, 0, 88, input, 0, NULL, NULL)) != CL_SUCCESS)
 	{
@@ -998,7 +997,7 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 	}
 
 	// Threads
-	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][0], 3, sizeof(cl_ulong), &numThreads)) != CL_SUCCESS)
+	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][0], 3, sizeof(cl_uint), &numThreads)) != CL_SUCCESS)
 	{
 		printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel 0, argument 3.", err_to_str(ret));
 		return(ERR_OCL_API);
@@ -1021,7 +1020,7 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 	}
 
 	// Threads
-	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][1], 2, sizeof(cl_ulong), &numThreads)) != CL_SUCCESS)
+	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][1], 2, sizeof(cl_uint), &numThreads)) != CL_SUCCESS)
 	{
 		printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel 1, argument 2.", err_to_str(ret));
 		return(ERR_OCL_API);
@@ -1081,7 +1080,7 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 	}
 
 	// Threads
-	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][2], 6, sizeof(cl_ulong), &numThreads)) != CL_SUCCESS)
+	if((ret = clSetKernelArg(ctx->Kernels[kernel_storage][2], 6, sizeof(cl_uint), &numThreads)) != CL_SUCCESS)
 	{
 		printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel 2, argument 6.", err_to_str(ret));
 		return(ERR_OCL_API);
@@ -1115,6 +1114,12 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 		{
 			printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel %d, argument %d.", err_to_str(ret), i + 3, 3);
 			return ERR_OCL_API;
+		}
+
+		if((clSetKernelArg(ctx->Kernels[kernel_storage][i + 3], 4, sizeof(cl_uint), &numThreads)) != CL_SUCCESS)
+		{
+			printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel %d, argument %d.", err_to_str(ret), i + 3, 4);
+			return(ERR_OCL_API);
 		}
 	}
 
@@ -1158,9 +1163,7 @@ size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrstak_algo miner_algo)
 		return ERR_OCL_API;
 	}
 
-	clFinish(ctx->CommandQueues);
-
-	size_t Nonce[2] = {ctx->Nonce, 1}, gthreads[2] = { g_thd, 8 }, lthreads[2] = { w_size, 8 };
+	size_t Nonce[2] = {ctx->Nonce, 1}, gthreads[2] = { g_thd, 8 }, lthreads[2] = { 8, 8 };
 	if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[kernel_storage][0], 2, Nonce, gthreads, lthreads, 0, NULL, NULL)) != CL_SUCCESS)
 	{
 		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), 0);
@@ -1181,63 +1184,23 @@ size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrstak_algo miner_algo)
 		return ERR_OCL_API;
 	}
 
-	if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[2], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces, 0, NULL, NULL)) != CL_SUCCESS)
-	{
-		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
-		return ERR_OCL_API;
-	}
-
-	if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[3], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 1, 0, NULL, NULL)) != CL_SUCCESS)
-	{
-		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
-		return ERR_OCL_API;
-	}
-
-	if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[4], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 2, 0, NULL, NULL)) != CL_SUCCESS)
-	{
-		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
-		return ERR_OCL_API;
-	}
-
-	if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[5], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 3, 0, NULL, NULL)) != CL_SUCCESS)
-	{
-		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
-		return ERR_OCL_API;
-	}
-
-	clFinish(ctx->CommandQueues);
-
 	for(int i = 0; i < 4; ++i)
 	{
-		if(BranchNonces[i])
+		size_t tmpNonce = ctx->Nonce;
+		if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[kernel_storage][i + 3], 1, &tmpNonce, &g_thd, &w_size, 0, NULL, NULL)) != CL_SUCCESS)
 		{
-			// Threads
-			if((clSetKernelArg(ctx->Kernels[kernel_storage][i + 3], 4, sizeof(cl_ulong), BranchNonces + i)) != CL_SUCCESS)
-			{
-				printer::inst()->print_msg(L1,"Error %s when calling clSetKernelArg for kernel %d, argument %d.", err_to_str(ret), i + 3, 4);
-				return(ERR_OCL_API);
-			}
-
-			// round up to next multiple of w_size
-			BranchNonces[i] = ((BranchNonces[i] + w_size - 1u) / w_size) * w_size;
-			// number of global threads must be a multiple of the work group size (w_size)
-			assert(BranchNonces[i]%w_size == 0);
-			size_t tmpNonce = ctx->Nonce;
-			if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[kernel_storage][i + 3], 1, &tmpNonce, BranchNonces + i, &w_size, 0, NULL, NULL)) != CL_SUCCESS)
-			{
-				printer::inst()->print_msg(L1,"Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), i + 3);
-				return ERR_OCL_API;
-			}
+			printer::inst()->print_msg(L1,"Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), i + 3);
+			return ERR_OCL_API;
 		}
 	}
 
+	// this call is blocking therefore the access to the results without cl_finish is fine
 	if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->OutputBuffer, CL_TRUE, 0, sizeof(cl_uint) * 0x100, HashOutput, 0, NULL, NULL)) != CL_SUCCESS)
 	{
 		printer::inst()->print_msg(L1,"Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
 		return ERR_OCL_API;
 	}
 
-	clFinish(ctx->CommandQueues);
 	auto & numHashValues = HashOutput[0xFF];
 	// avoid out of memory read, we have only storage for 0xFF results
 	if(numHashValues > 0xFF)
